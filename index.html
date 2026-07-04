@@ -441,7 +441,14 @@ firebase.initializeApp(FIREBASE_CONFIG);
 const db = firebase.firestore();
 const auth = firebase.auth();
 let isAdmin = false;
-auth.onAuthStateChanged(user => { isAdmin = !!user; });
+auth.onAuthStateChanged(user => {
+    console.log(user);
+    if(user){
+        console.log("Logged in");
+    }else{
+        console.log("Not logged in");
+    }
+});
 
 document.getElementById('feeDisplay').textContent = '₹' + MATCH_FEE;
 
