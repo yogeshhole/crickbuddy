@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Cricbots — Weekend Cricket</title>
+<meta name="description" content="Cricbots Weekend Cricket — book your Saturday & Sunday match slot, pay by UPI, confirm on WhatsApp.">
+<meta name="theme-color" content="#0F1613">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600;700&family=Karla:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg: #0F1613;
+    --surface: #17201B;
+    --surface-2: #1D2822;
+    --line: #2B3A32;
+    --cream: #F5F0E1;
+    --cream-dim: #C9C3AE;
+    --leather: #A8321D;
+    --leather-bright: #D0451F;
+    --gold: #C9A227;
+    --sage: #8FA396;
+    --radius: 14px;
+    --display: 'Teko', sans-serif;
+    --body: 'Karla', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; background:var(--bg); color:var(--cream);
+    font-family:var(--body); line-height:1.55; -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(168,50,29,0.14), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, rgba(201,162,39,0.08), transparent 55%);
+  }
+  h1,h2,h3,h4{font-family:var(--display); font-weight:600; letter-spacing:0.01em; margin:0 0 0.3em; color:var(--cream); text-transform:uppercase;}
+  h1{font-size:clamp(2.6rem,8vw,4.6rem); line-height:0.95;}
+  h2{font-size:clamp(1.8rem,4vw,2.6rem); line-height:1;}
+  h3{font-size:1.4rem;}
+  a{color:var(--gold);}
+  .container{max-width:1080px; margin:0 auto; padding:0 24px;}
+  .eyebrow{
+    font-family:var(--display); text-transform:uppercase; letter-spacing:0.18em;
+    color:var(--sage); font-size:0.95rem; font-weight:500; display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{content:''; width:22px; height:2px; background:var(--leather-bright); display:inline-block;}
+
+  header{
+    position:sticky; top:0; z-index:50; backdrop-filter:blur(10px);
+    background:rgba(15,22,19,0.86); border-bottom:1px solid var(--line);
+  }
+  .nav{display:flex; align-items:center; justify-content:space-between; padding:14px 24px; max-width:1080px; margin:0 auto;}
+  .brand{font-family:var(--display); font-size:1.7rem; letter-spacing:0.04em; color:var(--cream); text-transform:uppercase; display:flex; align-items:center; gap:8px;}
+  .brand span{color:var(--leather-bright);}
+  .navlinks{display:flex; gap:26px; font-size:0.95rem;}
+  .navlinks a{color:var(--cream-dim); text-decoration:none; font-weight:600;}
+  .navlinks a:hover{color:var(--gold);}
+  .navlinks .admin-link{color:var(--sage); font-size:0.85rem;}
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    font-family:var(--body); font-weight:700; font-size:0.98rem; letter-spacing:0.01em;
+    padding:13px 26px; border-radius:999px; border:none; cursor:pointer;
+    transition:transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  }
+  .btn:active{transform:scale(0.97);}
+  .btn-primary{background:var(--leather-bright); color:var(--cream); box-shadow:0 6px 24px rgba(208,69,31,0.35);}
+  .btn-primary:hover{background:#e2521f; box-shadow:0 8px 28px rgba(208,69,31,0.5);}
+  .btn-outline{background:transparent; color:var(--cream); border:1.5px solid var(--line);}
+  .btn-outline:hover{border-color:var(--gold); color:var(--gold);}
+  .btn-gold{background:var(--gold); color:#1a1406;}
+  .btn-gold:hover{background:#dbb42f;}
+  .btn:disabled{opacity:0.45; cursor:not-allowed;}
+  .btn-block{width:100%;}
+
+  .hero{padding:64px 0 40px;}
+  .hero-grid{display:grid; grid-template-columns:1.1fr 0.9fr; gap:40px; align-items:center;}
+  @media (max-width:860px){.hero-grid{grid-template-columns:1fr;}}
+  .hero-copy p{color:var(--cream-dim); font-size:1.08rem; max-width:46ch;}
+  .hero-ctas{display:flex; gap:14px; margin-top:26px; flex-wrap:wrap;}
+
+  .scoreboard{
+    background:linear-gradient(180deg, var(--surface-2), var(--surface));
+    border:1px solid var(--line); border-radius:20px; padding:26px 24px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.03);
+    position:relative; overflow:hidden;
+  }
+  .scoreboard::before{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background:repeating-linear-gradient(180deg, rgba(255,255,255,0.015) 0 2px, transparent 2px 4px);
+  }
+  .sb-label{font-family:var(--display); letter-spacing:0.18em; color:var(--gold); font-size:0.9rem; text-transform:uppercase; text-align:center;}
+  .sb-date{text-align:center; color:var(--cream-dim); font-size:0.95rem; margin-top:2px;}
+  .sb-clock{display:flex; justify-content:center; gap:10px; margin:20px 0 18px;}
+  .sb-unit{text-align:center; min-width:64px;}
+  .sb-num{
+    font-family:var(--display); font-size:3rem; line-height:1; color:var(--cream);
+    background:#0d130f; border:1px solid var(--line); border-radius:8px; padding:6px 0;
+    font-variant-numeric:tabular-nums; box-shadow:inset 0 2px 6px rgba(0,0,0,0.5);
+  }
+  .sb-num.flip{animation:flip 0.5s ease;}
+  @keyframes flip{ 0%{transform:rotateX(0deg); opacity:1;} 45%{transform:rotateX(90deg); opacity:0.3;} 55%{transform:rotateX(90deg); opacity:0.3;} 100%{transform:rotateX(0deg); opacity:1;} }
+  .sb-unit small{display:block; font-size:0.7rem; letter-spacing:0.12em; color:var(--sage); text-transform:uppercase; margin-top:6px;}
+  .sb-slots{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    background:rgba(0,0,0,0.25); border-radius:12px; padding:12px 16px; margin-top:6px;
+  }
+  .sb-slots .txt{font-size:0.85rem; color:var(--cream-dim); text-transform:uppercase; letter-spacing:0.08em;}
+  .sb-slots .count{font-family:var(--display); font-size:1.6rem; color:var(--gold);}
+  .bar{height:6px; border-radius:4px; background:var(--line); overflow:hidden; margin-top:8px;}
+  .bar-fill{height:100%; background:linear-gradient(90deg,var(--leather),var(--gold)); transition:width 0.4s ease;}
+
+  section{padding:70px 0;}
+  .section-head{margin-bottom:36px; max-width:60ch;}
+  .section-head p{color:var(--cream-dim);}
+
+  .fixture-scroll{
+    max-height:460px; overflow-y:auto; border:1px solid var(--line); border-radius:16px;
+    background:var(--surface);
+  }
+  .month-heading{
+    position:sticky; top:0; background:var(--surface-2); padding:10px 20px;
+    font-family:var(--display); letter-spacing:0.1em; color:var(--gold); font-size:1.05rem;
+    text-transform:uppercase; border-bottom:1px solid var(--line); z-index:2;
+  }
+  .fixture-row{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    padding:14px 20px; border-bottom:1px solid var(--line);
+  }
+  .fixture-row:last-child{border-bottom:none;}
+  .fixture-row.next{background:rgba(201,162,39,0.07);}
+  .fx-day{width:52px; text-align:center; font-family:var(--display); font-size:1.4rem; color:var(--cream); line-height:1;}
+  .fx-day small{display:block; font-size:0.65rem; color:var(--sage); letter-spacing:0.1em;}
+  .fx-info{flex:1; min-width:0;}
+  .fx-info .d{font-weight:700; color:var(--cream); font-size:0.98rem;}
+  .fx-info .t{color:var(--cream-dim); font-size:0.85rem;}
+  .fx-slots{text-align:right; font-size:0.82rem; color:var(--cream-dim); min-width:92px;}
+  .fx-slots b{color:var(--gold); font-family:var(--display); font-size:1.1rem;}
+  .tag{font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em; padding:3px 9px; border-radius:999px; font-weight:700;}
+  .tag-open{background:rgba(143,163,150,0.18); color:var(--sage);}
+  .tag-almost{background:rgba(201,162,39,0.18); color:var(--gold);}
+  .tag-full{background:rgba(193,68,14,0.18); color:var(--leather-bright);}
+
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:30px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:36px;}
+  @media (max-width:860px){.grid2{grid-template-columns:1fr;}}
+  label{display:block; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.07em; color:var(--sage); margin:16px 0 6px;}
+  label:first-child{margin-top:0;}
+  input[type=text], input[type=tel], select{
+    width:100%; padding:12px 14px; background:#0d130f; border:1px solid var(--line); border-radius:10px;
+    color:var(--cream); font-family:var(--body); font-size:0.98rem;
+  }
+  input:focus, select:focus{outline:2px solid var(--gold); outline-offset:1px; border-color:var(--gold);}
+  .fee-line{display:flex; justify-content:space-between; align-items:baseline; margin-top:20px; padding-top:16px; border-top:1px dashed var(--line);}
+  .fee-line .amt{font-family:var(--display); font-size:2rem; color:var(--gold);}
+  .helptext{font-size:0.82rem; color:var(--sage); margin-top:6px;}
+  .step-badge{
+    display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px;
+    border-radius:50%; background:var(--leather); color:var(--cream); font-family:var(--display); font-size:1rem; margin-right:8px;
+  }
+
+  .qr-wrap{display:flex; flex-direction:column; align-items:center; gap:10px; padding:20px; background:#0d130f; border-radius:14px; border:1px solid var(--line);}
+  .upi-id-box{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:#0d130f; border:1px solid var(--line); border-radius:10px; padding:12px 16px; margin-top:10px;
+  }
+  .upi-id-box code{font-family:var(--display); font-size:1.2rem; color:var(--gold); letter-spacing:0.02em;}
+  .copy-btn{background:none; border:1px solid var(--line); color:var(--cream-dim); border-radius:8px; padding:6px 10px; font-size:0.78rem; cursor:pointer;}
+  .copy-btn:hover{border-color:var(--gold); color:var(--gold);}
+
+  .success-box{background:rgba(201,162,39,0.1); border:1px solid var(--gold); border-radius:14px; padding:20px; margin-top:20px;}
+  .success-box h4{color:var(--gold); margin-bottom:8px;}
+
+  .rules{list-style:none; margin:0; padding:0; display:grid; gap:12px;}
+  .rules li{display:flex; gap:12px; align-items:flex-start; color:var(--cream-dim);}
+  .rules li::before{content:'●'; color:var(--leather-bright); flex-shrink:0; margin-top:3px; font-size:0.6rem;}
+
+  footer{border-top:1px solid var(--line); padding:40px 0; color:var(--sage); font-size:0.9rem;}
+  .foot-grid{display:flex; justify-content:space-between; flex-wrap:wrap; gap:18px;}
+  .foot-grid a{color:var(--sage); text-decoration:underline;}
+
+  #adminPanel{display:none;}
+  #adminPanel.open{display:block;}
+  .admin-gate{max-width:420px; margin:0 auto; text-align:center;}
+  table.admin-table{width:100%; border-collapse:collapse; font-size:0.88rem;}
+  table.admin-table th, table.admin-table td{padding:9px 10px; border-bottom:1px solid var(--line); text-align:left; color:var(--cream-dim);}
+  table.admin-table th{color:var(--gold); font-family:var(--display); letter-spacing:0.06em; text-transform:uppercase; font-weight:500; font-size:0.85rem;}
+  select.status-select{padding:6px 8px; font-size:0.8rem; width:auto;}
+  .admin-summary{display:flex; gap:24px; flex-wrap:wrap; margin-bottom:26px;}
+  .stat{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 22px; min-width:140px;}
+  .stat b{display:block; font-family:var(--display); font-size:1.8rem; color:var(--gold);}
+  .stat span{font-size:0.78rem; color:var(--sage); text-transform:uppercase; letter-spacing:0.06em;}
+  .fixture-block{margin-bottom:22px; border:1px solid var(--line); border-radius:14px; overflow:hidden;}
+  .fixture-block summary{cursor:pointer; padding:14px 18px; background:var(--surface-2); font-family:var(--display); letter-spacing:0.04em; font-size:1.1rem; color:var(--cream); list-style:none;}
+  .fixture-block summary::-webkit-details-marker{display:none;}
+  .fixture-block .fb-body{padding:14px 18px; background:var(--surface); overflow-x:auto;}
+  .empty-note{color:var(--sage); font-style:italic; padding:14px 18px;}
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:var(--gold); color:#1a1406; padding:12px 22px; border-radius:999px;
+    font-weight:700; z-index:200; box-shadow:0 8px 24px rgba(0,0,0,0.4); opacity:0; pointer-events:none; transition:opacity 0.25s ease, transform 0.25s ease;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
+
+  @media (prefers-reduced-motion: reduce){
+    .sb-num.flip{animation:none;}
+    html{scroll-behavior:auto;}
+  }
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <div class="brand">🏏 CRIC<span>BOTS</span></div>
+    <nav class="navlinks">
+      <a href="#fixtures">Fixtures</a>
+      <a href="#book">Book</a>
+      <a href="#pay">Pay</a>
+      <a href="#rules">Guidelines</a>
+      <a href="#admin" class="admin-link">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <div class="eyebrow">Weekend cricket community</div>
+      <h1>Play. Compete.<br>Enjoy every weekend.</h1>
+      <p>Cricbots runs early-morning matches every Saturday and Sunday through the season. Pick a fixture, pay the match fee by UPI, and confirm on WhatsApp — your spot holds on a first-paid, first-confirmed basis.</p>
+      <div class="hero-ctas">
+        <button class="btn btn-primary" onclick="document.getElementById('book').scrollIntoView()">Book your slot</button>
+        <button class="btn btn-outline" onclick="document.getElementById('fixtures').scrollIntoView()">See fixtures</button>
+      </div>
+    </div>
+
+    <div class="scoreboard">
+      <div class="sb-label">Next fixture</div>
+      <div class="sb-date" id="nextFixtureDate">Loading…</div>
+      <div class="sb-clock" id="clock">
+        <div class="sb-unit"><div class="sb-num" id="d">00</div><small>Days</small></div>
+        <div class="sb-unit"><div class="sb-num" id="h">00</div><small>Hrs</small></div>
+        <div class="sb-unit"><div class="sb-num" id="m">00</div><small>Min</small></div>
+        <div class="sb-unit"><div class="sb-num" id="s">00</div><small>Sec</small></div>
+      </div>
+      <div class="sb-slots">
+        <div class="txt">Slots filled</div>
+        <div class="count" id="slotCount">0 / 22</div>
+      </div>
+      <div class="bar"><div class="bar-fill" id="slotBar" style="width:0%"></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="fixtures">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Season Oct – 30 May</div>
+      <h2>Fixture list</h2>
+      <p>Every Saturday and Sunday, 7:00–9:00 AM. Venue is shared in the Cricbots WhatsApp group before each match.</p>
+    </div>
+    <div class="fixture-scroll" id="fixtureScroll">Loading fixtures…</div>
+  </div>
+</section>
+
+<section id="book">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Reserve your spot</div>
+      <h2>Book a match</h2>
+      <p>Fill this in, pay the fee, then confirm — your booking saves the moment you submit it below.</p>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3><span class="step-badge">1</span>Your details</h3>
+        <label for="pName">Player name</label>
+        <input type="text" id="pName" placeholder="e.g. Rahul Deshmukh">
+        <label for="pPhone">WhatsApp number</label>
+        <input type="tel" id="pPhone" placeholder="e.g. 98765 43210">
+        <label for="pFixture">Choose fixture</label>
+        <select id="pFixture"></select>
+        <div class="fee-line">
+          <span>Match fee</span>
+          <span class="amt" id="feeDisplay">₹150</span>
+        </div>
+        <div class="helptext">Set your own match fee by editing <code>MATCH_FEE</code> near the top of the script.</div>
+      </div>
+
+      <div class="card">
+        <h3><span class="step-badge">2</span>Pay &amp; confirm</h3>
+        <p class="helptext" style="margin-top:0;">Tap Pay to open your UPI app, or scan the QR in the Pay section below.</p>
+        <button class="btn btn-primary btn-block" id="payBtn" onclick="openUpiPay()">Pay via UPI</button>
+
+        <label for="txnId">UPI transaction ID</label>
+        <input type="text" id="txnId" placeholder="e.g. 402719xxxxxx">
+
+        <div style="margin-top:18px; display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-gold" style="flex:1;" onclick="submitBooking()">Submit booking</button>
+          <button class="btn btn-outline" style="flex:1;" onclick="sendWhatsAppConfirm()">Confirm on WhatsApp</button>
+        </div>
+
+        <div class="success-box" id="successBox" style="display:none;">
+          <h4>Slot reserved ✅</h4>
+          <p id="successText"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pay">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Match fee payment</div>
+      <h2>Scan any UPI app</h2>
+      <p>Google Pay, PhonePe, Paytm, BHIM — any of them will work.</p>
+    </div>
+    <div class="grid2">
+      <div class="qr-wrap">
+        <div id="qrcode"></div>
+        <div class="upi-id-box">
+          <code>9850946044@ybl</code>
+          <button class="copy-btn" onclick="copyUpi()">Copy</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Payment instructions</h3>
+        <ol style="color:var(--cream-dim); padding-left:20px;">
+          <li>Open any UPI app.</li>
+          <li>Pay the match fee to <strong>9850946044@ybl</strong>.</li>
+          <li>Add your <strong>name</strong> as the payment remark.</li>
+          <li>Share the screenshot or transaction ID in the Cricbots WhatsApp group.</li>
+        </ol>
+        <p class="helptext">Your slot is confirmed once the payment is verified in the group or by an admin here.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="rules">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Team guidelines</div>
+      <h2>Before you play</h2>
+    </div>
+    <ul class="rules">
+      <li>Match fee should be paid before the scheduled game.</li>
+      <li>First paid, first confirmed — slots are limited each session.</li>
+      <li>Arrive at least 15 minutes before the match.</li>
+      <li>Inform the group in advance if you can't attend after booking.</li>
+      <li>Respect fellow players, umpires, and ground rules.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="admin">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Organisers only</div>
+      <h2>Admin dashboard</h2>
+    </div>
+
+    <div class="admin-gate card" id="adminGate">
+      <p>Enter the admin passcode to view bookings and payment status.</p>
+      <label for="adminPass">Passcode</label>
+      <input type="text" id="adminPass" placeholder="Passcode">
+      <button class="btn btn-gold" style="margin-top:16px;" onclick="adminLogin()">Enter dashboard</button>
+      <p class="helptext">Default passcode is set in the script as <code>ADMIN_PASSCODE</code> — change it before you deploy this.</p>
+    </div>
+
+    <div id="adminPanel">
+      <div class="admin-summary">
+        <div class="stat"><b id="statTotalBookings">0</b><span>Total bookings</span></div>
+        <div class="stat"><b id="statConfirmed">0</b><span>Confirmed</span></div>
+        <div class="stat"><b id="statPending">0</b><span>Pending review</span></div>
+        <div class="stat"><b id="statCollected">₹0</b><span>Confirmed fees</span></div>
+      </div>
+      <button class="btn btn-outline" onclick="loadAdminData()" style="margin-bottom:20px;">Refresh</button>
+      <div id="adminFixtures">Loading…</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container foot-grid">
+    <div>
+      <strong style="color:var(--cream);">🏆 Cricbots — Weekend Cricket Community</strong><br>
+      Every Saturday &amp; Sunday · 7:00–9:00 AM · Season: October – 30 May
+    </div>
+    <div>
+      UPI for match fees: <strong style="color:var(--gold);">9850946044@ybl</strong><br>
+      <a href="https://chat.whatsapp.com/REPLACE_WITH_YOUR_GROUP_LINK" target="_blank" rel="noopener">Join the WhatsApp group</a>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ CONFIG — edit these for your own group ============ */
+const UPI_ID = '9850946044@ybl';
+const UPI_PAYEE_NAME = 'Cricbots';
+const MATCH_FEE = 150;                 // per player per match
+const TOTAL_SLOTS = 22;                // slots per match
+const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/REPLACE_WITH_YOUR_GROUP_LINK';
+const WHATSAPP_CONFIRM_NUMBER = '';    // e.g. '919850946044' — leave blank to just share to the group chat
+const ADMIN_PASSCODE = 'cricbots2027'; // change this before deploying — this is a light gate, not real security
+/* =================================================================== */
+
+document.getElementById('feeDisplay').textContent = '₹' + MATCH_FEE;
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function isoDate(d){ return d.toISOString().slice(0,10); }
+function dayLabel(d){ return d.toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short'}); }
+
+function getSeasonRange(now){
+  const y = now.getFullYear();
+  const startA = new Date(y-1, 9, 1, 7, 0, 0);
+  const endA   = new Date(y, 4, 30, 23, 59, 59);
+  if (now >= startA && now <= endA) return {start:startA, end:endA};
+  const startB = new Date(y, 9, 1, 7, 0, 0);
+  const endB   = new Date(y+1, 4, 30, 23, 59, 59);
+  return {start:startB, end:endB};
+}
+
+function buildFixtures(){
+  const now = new Date();
+  const {start, end} = getSeasonRange(now);
+  const list = [];
+  let cur = new Date(start);
+  while (cur <= end){
+    const day = cur.getDay();
+    if (day === 0 || day === 6){
+      const matchStart = new Date(cur); matchStart.setHours(7,0,0,0);
+      const matchEnd = new Date(cur); matchEnd.setHours(9,0,0,0);
+      list.push({
+        dateISO: isoDate(cur),
+        start: matchStart,
+        end: matchEnd,
+        label: dayLabel(cur),
+        dayShort: cur.toLocaleDateString('en-IN',{weekday:'short'}),
+        dayNum: cur.getDate(),
+        monthLabel: cur.toLocaleDateString('en-IN',{month:'long', year:'numeric'})
+      });
+    }
+    cur.setDate(cur.getDate()+1);
+  }
+  return list;
+}
+
+const FIXTURES = buildFixtures();
+const bookingCounts = {};
+
+function nextFixture(){
+  const now = new Date();
+  return FIXTURES.find(f => f.end >= now) || FIXTURES[0];
+}
+
+function renderFixtures(){
+  const wrap = document.getElementById('fixtureScroll');
+  const select = document.getElementById('pFixture');
+  wrap.innerHTML = '';
+  select.innerHTML = '';
+  let lastMonth = '';
+  const nf = nextFixture();
+  FIXTURES.forEach(f => {
+    if (f.monthLabel !== lastMonth){
+      const mh = document.createElement('div');
+      mh.className = 'month-heading';
+      mh.textContent = f.monthLabel;
+      wrap.appendChild(mh);
+      lastMonth = f.monthLabel;
+    }
+    const row = document.createElement('div');
+    row.className = 'fixture-row' + (f.dateISO === nf.dateISO ? ' next' : '');
+    row.id = 'fxrow-' + f.dateISO;
+    row.innerHTML = `
+      <div class="fx-day">${f.dayNum}<small>${f.dayShort}</small></div>
+      <div class="fx-info"><div class="d">${f.label}</div><div class="t">7:00 – 9:00 AM</div></div>
+      <div class="fx-slots" id="fxslots-${f.dateISO}">…</div>
+    `;
+    row.style.cursor = 'pointer';
+    row.addEventListener('click', () => {
+      select.value = f.dateISO;
+      document.getElementById('book').scrollIntoView({behavior:'smooth'});
+    });
+    wrap.appendChild(row);
+
+    const opt = document.createElement('option');
+    opt.value = f.dateISO;
+    opt.textContent = f.label + (f.dateISO === nf.dateISO ? '  (next up)' : '');
+    select.appendChild(opt);
+  });
+  select.value = nf.dateISO;
+}
+
+async function getBookings(dateISO){
+  try{
+    const res = await window.storage.get('bookings:' + dateISO, true);
+    return res ? JSON.parse(res.value) : [];
+  }catch(e){
+    return [];
+  }
+}
+async function saveBookings(dateISO, arr){
+  try{
+    await window.storage.set('bookings:' + dateISO, JSON.stringify(arr), true);
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+
+async function refreshSlotCounts(){
+  for (const f of FIXTURES){
+    const arr = await getBookings(f.dateISO);
+    const active = arr.filter(b => b.status !== 'cancelled');
+    bookingCounts[f.dateISO] = active.length;
+    const el = document.getElementById('fxslots-' + f.dateISO);
+    if (el){
+      const n = active.length;
+      let tagClass = 'tag-open', tagText = 'Open';
+      if (n >= TOTAL_SLOTS){ tagClass='tag-full'; tagText='Full'; }
+      else if (n >= TOTAL_SLOTS - 4){ tagClass='tag-almost'; tagText='Almost full'; }
+      el.innerHTML = `<b>${n}/${TOTAL_SLOTS}</b><br><span class="tag ${tagClass}">${tagText}</span>`;
+    }
+  }
+  updateHeroSlots();
+}
+
+function updateHeroSlots(){
+  const nf = nextFixture();
+  const n = bookingCounts[nf.dateISO] || 0;
+  document.getElementById('slotCount').textContent = `${n} / ${TOTAL_SLOTS}`;
+  document.getElementById('slotBar').style.width = Math.min(100, (n/TOTAL_SLOTS)*100) + '%';
+}
+
+let lastVals = {};
+function tickClock(){
+  const nf = nextFixture();
+  document.getElementById('nextFixtureDate').textContent = nf.label + ' · 7:00 AM';
+  const now = new Date();
+  let diff = Math.max(0, nf.start - now);
+  const d = Math.floor(diff / 86400000); diff -= d*86400000;
+  const h = Math.floor(diff / 3600000); diff -= h*3600000;
+  const m = Math.floor(diff / 60000); diff -= m*60000;
+  const s = Math.floor(diff / 1000);
+  setDigit('d', pad(d));
+  setDigit('h', pad(h));
+  setDigit('m', pad(m));
+  setDigit('s', pad(s));
+}
+function setDigit(id, val){
+  const el = document.getElementById(id);
+  if (lastVals[id] !== val){
+    el.textContent = val;
+    el.classList.remove('flip'); void el.offsetWidth; el.classList.add('flip');
+    lastVals[id] = val;
+  }
+}
+setInterval(tickClock, 1000);
+
+function buildUpiUri(name, dateISO){
+  const note = encodeURIComponent(`Cricbots ${name||'Player'} ${dateISO||''}`.trim());
+  return `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_PAYEE_NAME)}&am=${MATCH_FEE}&cu=INR&tn=${note}`;
+}
+function renderQr(){
+  const holder = document.getElementById('qrcode');
+  holder.innerHTML = '';
+  if (window.QRCode){
+    new QRCode(holder, {text: buildUpiUri('', ''), width:180, height:180, colorDark:'#0F1613', colorLight:'#F5F0E1'});
+  } else {
+    holder.textContent = 'QR unavailable — pay using the UPI ID below.';
+  }
+}
+function copyUpi(){
+  navigator.clipboard?.writeText(UPI_ID).then(()=>showToast('UPI ID copied')).catch(()=>showToast('Copy failed — long-press to copy'));
+}
+function openUpiPay(){
+  const name = document.getElementById('pName').value.trim();
+  const dateISO = document.getElementById('pFixture').value;
+  if (!name){ showToast('Add your name first'); return; }
+  window.location.href = buildUpiUri(name, dateISO);
+}
+
+function genId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+async function submitBooking(){
+  const name = document.getElementById('pName').value.trim();
+  const phone = document.getElementById('pPhone').value.trim();
+  const dateISO = document.getElementById('pFixture').value;
+  const txnId = document.getElementById('txnId').value.trim();
+
+  if (!name || !phone){ showToast('Enter your name and WhatsApp number'); return; }
+  if (!txnId){ showToast('Enter your UPI transaction ID after paying'); return; }
+
+  const fixture = FIXTURES.find(f => f.dateISO === dateISO);
+  const arr = await getBookings(dateISO);
+
+  if (arr.filter(b=>b.status!=='cancelled').length >= TOTAL_SLOTS){
+    showToast('This fixture is full — pick another date');
+    return;
+  }
+
+  const record = {
+    id: genId(), name, phone, txnId,
+    amount: MATCH_FEE, date: dateISO,
+    submittedAt: new Date().toISOString(),
+    status: 'pending'
+  };
+  arr.push(record);
+  const ok = await saveBookings(dateISO, arr);
+
+  if (ok){
+    document.getElementById('successBox').style.display = 'block';
+    document.getElementById('successText').textContent =
+      `${name}, you're booked for ${fixture.label}, 7:00 AM. Fee ${MATCH_FEE} recorded against transaction ${txnId}. It'll show as confirmed once an admin verifies the payment.`;
+    showToast('Booking saved');
+    refreshSlotCounts();
+  } else {
+    showToast('Could not save booking — try again');
+  }
+}
+
+function sendWhatsAppConfirm(){
+  const name = document.getElementById('pName').value.trim();
+  const dateISO = document.getElementById('pFixture').value;
+  const txnId = document.getElementById('txnId').value.trim();
+  const fixture = FIXTURES.find(f => f.dateISO === dateISO);
+  const msg = `Cricbots booking — ${name || '(name)'}\nMatch: ${fixture ? fixture.label : dateISO}, 7:00 AM\nUPI txn ID: ${txnId || '(add after paying)'}`;
+  const base = WHATSAPP_CONFIRM_NUMBER ? `https://wa.me/${WHATSAPP_CONFIRM_NUMBER}` : WHATSAPP_GROUP_LINK;
+  const url = WHATSAPP_CONFIRM_NUMBER ? `${base}?text=${encodeURIComponent(msg)}` : base;
+  window.open(url, '_blank');
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+function adminLogin(){
+  const val = document.getElementById('adminPass').value;
+  if (val === ADMIN_PASSCODE){
+    document.getElementById('adminGate').style.display = 'none';
+    document.getElementById('adminPanel').classList.add('open');
+    loadAdminData();
+  } else {
+    showToast('Wrong passcode');
+  }
+}
+
+async function loadAdminData(){
+  const wrap = document.getElementById('adminFixtures');
+  wrap.textContent = 'Loading bookings…';
+  let totalBookings = 0, confirmed = 0, pending = 0, collected = 0;
+  const blocks = [];
+
+  for (const f of FIXTURES){
+    const arr = await getBookings(f.dateISO);
+    if (arr.length === 0) continue;
+    totalBookings += arr.length;
+    let rows = '';
+    arr.forEach(b => {
+      if (b.status === 'confirmed'){ confirmed++; collected += b.amount; }
+      else if (b.status !== 'cancelled'){ pending++; }
+      rows += `<tr>
+        <td>${escapeHtml(b.name)}</td>
+        <td>${escapeHtml(b.phone)}</td>
+        <td>${escapeHtml(b.txnId)}</td>
+        <td>${new Date(b.submittedAt).toLocaleString('en-IN')}</td>
+        <td>
+          <select class="status-select" data-date="${f.dateISO}" data-id="${b.id}" onchange="updateStatus(this)">
+            <option value="pending" ${b.status==='pending'?'selected':''}>Pending</option>
+            <option value="confirmed" ${b.status==='confirmed'?'selected':''}>Confirmed</option>
+            <option value="cancelled" ${b.status==='cancelled'?'selected':''}>Cancelled</option>
+          </select>
+        </td>
+      </tr>`;
+    });
+    blocks.push(`
+      <details class="fixture-block">
+        <summary>${f.label} — ${arr.filter(b=>b.status!=='cancelled').length}/${TOTAL_SLOTS} booked</summary>
+        <div class="fb-body">
+          <table class="admin-table">
+            <thead><tr><th>Name</th><th>Phone</th><th>Txn ID</th><th>Submitted</th><th>Status</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </details>
+    `);
+  }
+
+  document.getElementById('statTotalBookings').textContent = totalBookings;
+  document.getElementById('statConfirmed').textContent = confirmed;
+  document.getElementById('statPending').textContent = pending;
+  document.getElementById('statCollected').textContent = '₹' + collected;
+
+  wrap.innerHTML = blocks.length ? blocks.join('') : '<p class="empty-note">No bookings yet — once players book, they will show up here by fixture.</p>';
+}
+
+async function updateStatus(selectEl){
+  const dateISO = selectEl.dataset.date;
+  const id = selectEl.dataset.id;
+  const newStatus = selectEl.value;
+  const arr = await getBookings(dateISO);
+  const rec = arr.find(b => b.id === id);
+  if (rec){
+    rec.status = newStatus;
+    await saveBookings(dateISO, arr);
+    showToast('Status updated');
+    refreshSlotCounts();
+    loadAdminData();
+  }
+}
+
+function escapeHtml(str){
+  return String(str||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+});
+
+renderFixtures();
+renderQr();
+tickClock();
+refreshSlotCounts();
+</script>
+</body>
+</html>
