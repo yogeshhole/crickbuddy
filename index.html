@@ -12,6 +12,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600;700&family=Karla:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- Firebase (free "Spark" plan) — stores bookings so they persist once this is hosted on GitHub Pages -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
   :root{
     --bg: #0F1613;
@@ -369,11 +373,13 @@
     </div>
 
     <div class="admin-gate card" id="adminGate">
-      <p>Enter the admin passcode to view bookings and payment status.</p>
-      <label for="adminPass">Passcode</label>
-      <input type="text" id="adminPass" placeholder="Passcode">
-      <button class="btn btn-gold" style="margin-top:16px;" onclick="adminLogin()">Enter dashboard</button>
-      <p class="helptext">Default passcode is set in the script as <code>ADMIN_PASSCODE</code> — change it before you deploy this.</p>
+      <p>Sign in with the admin account to view bookings and payment status.</p>
+      <label for="adminEmail">Admin email</label>
+      <input type="text" id="adminEmail" placeholder="you@example.com">
+      <label for="adminPass">Password</label>
+      <input type="text" id="adminPass" placeholder="Password">
+      <button class="btn btn-gold" style="margin-top:16px;" onclick="adminLogin()">Sign in</button>
+      <p class="helptext">This account is created once in your Firebase console (Authentication → Users). See README for setup.</p>
     </div>
 
     <div id="adminPanel">
@@ -412,8 +418,24 @@ const MATCH_FEE = 150;                 // per player per match
 const TOTAL_SLOTS = 22;                // slots per match
 const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/REPLACE_WITH_YOUR_GROUP_LINK';
 const WHATSAPP_CONFIRM_NUMBER = '';    // e.g. '919850946044' — leave blank to just share to the group chat
-const ADMIN_PASSCODE = 'cricbots2027'; // change this before deploying — this is a light gate, not real security
+
+// Paste the config object from your Firebase project (Project settings → General → Your apps → Web app).
+// See README.md for step-by-step setup. This is free on Firebase's Spark plan.
+const FIREBASE_CONFIG = {
+  apiKey: "REPLACE_ME",
+  authDomain: "REPLACE_ME.firebaseapp.com",
+  projectId: "REPLACE_ME",
+  storageBucket: "REPLACE_ME.appspot.com",
+  messagingSenderId: "REPLACE_ME",
+  appId: "REPLACE_ME"
+};
 /* =================================================================== */
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.firestore();
+const auth = firebase.auth();
+let isAdmin = false;
+auth.onAuthStateChanged(user => { isAdmin = !!user; });
 
 document.getElementById('feeDisplay').textContent = '₹' + MATCH_FEE;
 
@@ -502,27 +524,45 @@ function renderFixtures(){
   select.value = nf.dateISO;
 }
 
-async function getBookings(dateISO){
-  try{
-    const res = await window.storage.get('bookings:' + dateISO, true);
-    return res ? JSON.parse(res.value) : [];
-  }catch(e){
-    return [];
-  }
+// One live listener on the whole "bookings" collection — cheap on Firebase's free tier,
+// and keeps every open tab (fixture list, hero counter, admin dashboard) in sync in real time.
+let allBookings = []; // [{id, name, phone, txnId, amount, date, submittedAt, status}, ...]
+
+function bookingsForDate(dateISO){
+  return allBookings.filter(b => b.date === dateISO);
 }
-async function saveBookings(dateISO, arr){
+
+db.collection('bookings').onSnapshot(snapshot => {
+  allBookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  refreshSlotCounts();
+  if (document.getElementById('adminPanel').classList.contains('open')) renderAdminData();
+}, err => {
+  console.error(err);
+  showToast('Could not load bookings — check FIREBASE_CONFIG');
+});
+
+async function addBookingDoc(record){
   try{
-    await window.storage.set('bookings:' + dateISO, JSON.stringify(arr), true);
+    await db.collection('bookings').add(record);
     return true;
   }catch(e){
+    console.error(e);
+    return false;
+  }
+}
+async function updateBookingStatus(id, status){
+  try{
+    await db.collection('bookings').doc(id).update({ status });
+    return true;
+  }catch(e){
+    console.error(e);
     return false;
   }
 }
 
-async function refreshSlotCounts(){
+function refreshSlotCounts(){
   for (const f of FIXTURES){
-    const arr = await getBookings(f.dateISO);
-    const active = arr.filter(b => b.status !== 'cancelled');
+    const active = bookingsForDate(f.dateISO).filter(b => b.status !== 'cancelled');
     bookingCounts[f.dateISO] = active.length;
     const el = document.getElementById('fxslots-' + f.dateISO);
     if (el){
@@ -603,21 +643,19 @@ async function submitBooking(){
   if (!txnId){ showToast('Enter your UPI transaction ID after paying'); return; }
 
   const fixture = FIXTURES.find(f => f.dateISO === dateISO);
-  const arr = await getBookings(dateISO);
 
-  if (arr.filter(b=>b.status!=='cancelled').length >= TOTAL_SLOTS){
+  if (bookingsForDate(dateISO).filter(b=>b.status!=='cancelled').length >= TOTAL_SLOTS){
     showToast('This fixture is full — pick another date');
     return;
   }
 
   const record = {
-    id: genId(), name, phone, txnId,
+    name, phone, txnId,
     amount: MATCH_FEE, date: dateISO,
     submittedAt: new Date().toISOString(),
     status: 'pending'
   };
-  arr.push(record);
-  const ok = await saveBookings(dateISO, arr);
+  const ok = await addBookingDoc(record);
 
   if (ok){
     document.getElementById('successBox').style.display = 'block';
@@ -648,25 +686,28 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove('show'), 2600);
 }
 
-function adminLogin(){
-  const val = document.getElementById('adminPass').value;
-  if (val === ADMIN_PASSCODE){
+async function adminLogin(){
+  const email = document.getElementById('adminEmail').value.trim();
+  const pass = document.getElementById('adminPass').value;
+  try{
+    await auth.signInWithEmailAndPassword(email, pass);
     document.getElementById('adminGate').style.display = 'none';
     document.getElementById('adminPanel').classList.add('open');
-    loadAdminData();
-  } else {
-    showToast('Wrong passcode');
+    renderAdminData();
+  }catch(e){
+    showToast('Sign-in failed — check email/password');
   }
 }
 
-async function loadAdminData(){
+function loadAdminData(){ renderAdminData(); } // kept for the Refresh button
+
+function renderAdminData(){
   const wrap = document.getElementById('adminFixtures');
-  wrap.textContent = 'Loading bookings…';
   let totalBookings = 0, confirmed = 0, pending = 0, collected = 0;
   const blocks = [];
 
   for (const f of FIXTURES){
-    const arr = await getBookings(f.dateISO);
+    const arr = bookingsForDate(f.dateISO);
     if (arr.length === 0) continue;
     totalBookings += arr.length;
     let rows = '';
@@ -679,7 +720,7 @@ async function loadAdminData(){
         <td>${escapeHtml(b.txnId)}</td>
         <td>${new Date(b.submittedAt).toLocaleString('en-IN')}</td>
         <td>
-          <select class="status-select" data-date="${f.dateISO}" data-id="${b.id}" onchange="updateStatus(this)">
+          <select class="status-select" data-id="${b.id}" onchange="updateStatus(this)">
             <option value="pending" ${b.status==='pending'?'selected':''}>Pending</option>
             <option value="confirmed" ${b.status==='confirmed'?'selected':''}>Confirmed</option>
             <option value="cancelled" ${b.status==='cancelled'?'selected':''}>Cancelled</option>
@@ -709,18 +750,10 @@ async function loadAdminData(){
 }
 
 async function updateStatus(selectEl){
-  const dateISO = selectEl.dataset.date;
   const id = selectEl.dataset.id;
   const newStatus = selectEl.value;
-  const arr = await getBookings(dateISO);
-  const rec = arr.find(b => b.id === id);
-  if (rec){
-    rec.status = newStatus;
-    await saveBookings(dateISO, arr);
-    showToast('Status updated');
-    refreshSlotCounts();
-    loadAdminData();
-  }
+  const ok = await updateBookingStatus(id, newStatus);
+  if (ok){ showToast('Status updated'); } else { showToast('Update failed — are you signed in?'); }
 }
 
 function escapeHtml(str){
